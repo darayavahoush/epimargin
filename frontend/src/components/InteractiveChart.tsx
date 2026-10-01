@@ -1,4 +1,5 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
+import { Download } from 'lucide-react';
 
 export interface ChartSeries {
   id: string;
@@ -43,6 +44,25 @@ export const InteractiveChart: React.FC<InteractiveChartProps> = ({
 }) => {
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
   const [disabledSeries, setDisabledSeries] = useState<Set<string>>(new Set());
+  const svgRef = useRef<SVGSVGElement>(null);
+
+  const downloadSVG = () => {
+    if (!svgRef.current) return;
+    const serializer = new XMLSerializer();
+    let source = serializer.serializeToString(svgRef.current);
+    if (!source.match(/^<svg[^>]+xmlns="http:\/\/www\.w3\.org\/2000\/svg"/)) {
+      source = source.replace(/^<svg/, '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+    const blob = new Blob([source], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${title.toLowerCase().replace(/[^a-z0-9]/g, '_')}.svg`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  };
 
   const activeSeries = useMemo(() => {
     return series.filter(s => !disabledSeries.has(s.id));
@@ -191,12 +211,22 @@ export const InteractiveChart: React.FC<InteractiveChartProps> = ({
               </button>
             );
           })}
+
+          {/* Download SVG Button */}
+          <button
+            onClick={downloadSVG}
+            title="Download Vector SVG Figure for Papers"
+            className="p-1 rounded-md bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700 transition cursor-pointer"
+          >
+            <Download className="w-3.5 h-3.5" />
+          </button>
         </div>
       </div>
 
       {/* SVG Chart Area */}
       <div className="relative w-full overflow-hidden select-none">
         <svg
+          ref={svgRef}
           viewBox={`0 0 ${chartWidth} ${height}`}
           className="w-full h-auto overflow-visible"
           onMouseMove={(e) => {

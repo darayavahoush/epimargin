@@ -1,0 +1,31 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Dec 21 18:38:00 2022
+
+@author: ananyasridhar
+"""
+
+name: run tutorial
+
+on: [push, pull_request, workflow_dispatch]
+
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        python-version: [3.7, 3.9]
+        os: [ ubuntu-latest ]
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install
+        run: |
+          python setup.py install
+      - name: Run tutorial
+        run: |
+          cd docs/ && python tutorial.py headless
